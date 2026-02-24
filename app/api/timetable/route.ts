@@ -5,9 +5,11 @@ import { prisma } from "@/lib/prisma";
 
 // Helper: read logged-in username from cookie "session"
 async function getUser() {
-  const session = cookies().get("session")?.value || "";
+  const cookieStore = await cookies();
+  const session = cookieStore.get("session")?.value;
+
   if (!session) return null;
-  // session cookie stores username (your prototype)
+
   const username = session;
   return prisma.user.findUnique({ where: { username } });
 }
