@@ -1,0 +1,154 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  role      String
+  createdAt DateTime @default(now())
+
+  likes        Like[]
+  saves        Save[]
+  events       Event[]
+  posts        Post[]
+  comments     Comment[]
+  applications Application[]
+  timetableEvents TimetableEvent[]
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime
+  hashtag   String // e.g. "UTFR", "midterm", "dance"
+  ownerType String // "personal" | "club" | "staff"
+  ownerName String? // e.g. "UTFR"
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Post {
+  id         String   @id @default(cuid())
+  author     String // display name for prototype
+  authorType String // "student" | "club" | "staff"
+  title      String
+  content    String
+  channel    String // "following" | "explore" | "ask-how" | "recruitment"
+  tags       String // comma-separated tags for prototype
+  createdAt  DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  comments    Comment[]
+  likes       Like[]
+  saves       Save[]
+  recruitment Recruitment?
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  author    String
+  content   String
+  createdAt DateTime @default(now())
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+}
+
+model Save {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+}
+
+model Recruitment {
+  id         String   @id @default(cuid())
+  summary    String // “abstract of this recruitment”
+  seatsTotal Int
+  seatsLeft  Int
+  deadline   DateTime
+  createdAt  DateTime @default(now())
+
+  postId String @unique
+  post   Post   @relation(fields: [postId], references: [id])
+
+  applications Application[]
+}
+
+model Application {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  firstName     String
+  lastName      String
+  middleName    String?
+  preferredName String?
+  gender        String?
+  position      String?
+  grade         String?
+  whyJoin       String?
+
+  recruitmentId String
+  recruitment   Recruitment @relation(fields: [recruitmentId], references: [id])
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+}
+
+model TimetableEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  location    String?
+  startAt     DateTime
+  endAt       DateTime
+  allDay      Boolean  @default(false)
+
+  // hashtags like ["UTFR", "Midterm", "DinnerDance"]
+  tags        String   @default("[]") // store JSON string for simple prototype
+
+  // who created it
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+
+  // "personal" or "public"
+  visibility  String   @default("personal")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ownerId, startAt])
+}
